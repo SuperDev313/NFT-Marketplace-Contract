@@ -458,4 +458,10 @@ contract Marketplace is ReentrancyGuard, Ownable {
         emit TokenNoLongerForSale(contractAddress, tokenIndex);
         emit TokenBought(contractAddress, tokenIndex, amount, seller, buyer);
     }
+
+    function withdraw() external nonReentrant {
+        uint256 amount = pendingBalance[msg.sender];
+        pendingBalance[msg.sender] = 0;
+        payable(msg.sender).transfer(amount);
+    }
 }
