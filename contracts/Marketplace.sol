@@ -145,4 +145,12 @@ contract Marketplace is ReentrancyGuard, Ownable {
         );
         emit CollectionUpdated(contractAddress);
     }
+
+    // Allows the owner of contract to remove their collections
+    function disableCollection(
+        address contractAddres
+    ) external collectionMustBeEnabled(contractAddress){
+        collectionState[contractAddres] = Collection(false, false, 0, "");
+        emit CollectionDisabled(collectionAddress);
+    }
 }
