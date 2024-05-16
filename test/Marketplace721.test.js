@@ -220,7 +220,7 @@ contract("Marketplace ERC-721", function (accounts) {
       "Token owner cannot enter bid to self."
     );
   });
-  
+
   it("enterBidForToken creates bid for token", async function () {
     // update collection
     await this.mp.updateCollection(
@@ -250,5 +250,15 @@ contract("Marketplace ERC-721", function (accounts) {
     await expect(bidDetails.tokenIndex).to.be.bignumber.equal("0");
     await expect(bidDetails.bidder).to.equal(accounts[1]);
     await expect(bidDetails.value).to.be.bignumber.equal(getPrice(1));
+  });
+
+  it("withdrawBidForToken requires active contract", async function () {
+    // try enterBidForToken when contract not enabled, should fail
+    await expectRevert(
+      this.mp.withdrawBidForToken(this.sample721.address, 0, {
+        from: accounts[1],
+      }),
+      "Collection must be enabled on this contract by project owner."
+    );
   });
 });
