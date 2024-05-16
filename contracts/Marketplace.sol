@@ -213,4 +213,40 @@ contract Marketplace is ReentrancyGuard, Ownable {
         );
         emit TokenNoLongerForSale(contractAddress, tokenIndex);
     }
+
+    // Open bid on a token
+    function enterBidForToken(
+        address contractAddress,
+        uint256 tokenIndex
+    )
+        external
+        payable
+        collectionMustBeEnabled(contractAddress)
+        notIfTokenOwner(contractAddress, tokenIndex)
+        nonReentrant
+    {
+        require(msg.value > 0, "Must bid some amount of Ether.");
+        Bid memory existing = tokenBids[contractAddress][tokenIndex];
+        require(
+            msg.value > existing.value,
+            "Must bid higher than current bid."
+        );
+        // Refund the failing bid
+        pendingBalance[existing.bidder] = pendingBalance[existing.bidder].add(
+            existing.value
+        );
+        tokenBids[contractAddress][tokenIndex] = Bid(
+            true,
+            tokenIndex,
+            msg.sender,
+            msg.value
+        );
+        emit TokenBidEntered(
+            contractAddress,
+            tokenIndex,
+            msg.value,
+            msg.sender
+        );
+    }
+    
 }
