@@ -45,4 +45,20 @@ contract("Marketplace ERC-721", function (accounts) {
       "Collection must be enabled on this contract by project owner."
     );
   });
+
+  it("disableCollection requires contract ownership", async function () {
+    // enable/update collection
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      1,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // try disableCollection as wrong owner, should fail
+    await expectRevert(
+      this.mp.disableCollection(this.sample721.address, { from: accounts[1] }),
+      "You must own the contract."
+    );
+  });
 });
