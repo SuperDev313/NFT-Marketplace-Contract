@@ -118,4 +118,12 @@ contract Marketplace is ReentrancyGuard, Ownable {
         );
         _;
     }
+
+    modifier collectionMustBeEnabled(address contractAddress) {
+        require(
+            true == collectionState[contractAddress].status,
+            "Collection must be enabled on this contract by project owner"
+        );
+        _;
+    }
 }
