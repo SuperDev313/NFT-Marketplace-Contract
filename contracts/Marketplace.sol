@@ -279,4 +279,99 @@ contract Marketplace is ReentrancyGuard, Ownable {
         );
         payable(msg.sender).transfer(amount);
     }
+
+    // Buyer accepts an offer to buy the token
+    function acceptOfferForToken(
+        address contractAddress,
+        uint256 tokenIndex
+    )
+        external
+        payable
+        collectionMustBeEnabled(contractAddress)
+        notIfTokenOwner(contractAddress, tokenIndex)
+        nonReentrant
+    {
+        Offer memory offer = tokenOffers[contractAddress][tokenIndex];
+        address seller = offer.seller;
+        address buyer = msg.sender;
+        uint256 amount = msg.value;
+
+        // Checks
+        require(amount >= offer.minValue, "Not enough Ether sent.");
+        require(offer.isForSale, "Token must be for sale by owner.");
+        if (offer.onlySellTo != address(0x0)) {
+            require(
+                buyer == offer.onlySellTo,
+                "Offer applies to other address."
+            );
+        }
+
+        // Confirm ownership then transfer the token from seller to buyer
+        if (collectionState[contractAddress].erc1155) {
+            require(
+                IERC1155(contractAddress).balanceOf(seller, tokenIndex) > 0,
+                "Seller is no longer the owner, cannot accept offer."
+            );
+            require(
+                IERC1155(contractAddress).isApprovedForAll(
+                    seller,
+                    address(this)
+                ),
+                "Marketplace not approved to spend token on seller behalf."
+            );
+            IERC1155(contractAddress).safeTransferFrom(
+                seller,
+                buyer,
+                tokenIndex,
+                1,
+                bytes("")
+            );
+        } else {
+            require(
+                seller == IERC721(contractAddress).ownerOf(tokenIndex),
+                "Seller is no longer the owner, cannot accept offer."
+            );
+            require(
+                IERC721(contractAddress).getApproved(tokenIndex) ==
+                    address(this),
+                "Marketplace not approved to spend token on seller behalf."
+            );
+            IERC721(contractAddress).safeTransferFrom(
+                seller,
+                buyer,
+                tokenIndex
+            );
+        }
+
+        // Remove token offers
+        tokenOffers[contractAddress][tokenIndex] = Offer(
+            false,
+            tokenIndex,
+            buyer,
+            0,
+            address(0x0)
+        );
+
+        // Take cut for the project if royalties
+        collectRoyalties(contractAddress, seller, amount);
+
+        // Check for the case where there is a bid from the new owner and refund it.
+        // Any other bid can stay in place.
+        Bid memory bid = tokenBids[contractAddress][tokenIndex];
+        if (bid.bidder == buyer) {
+            // Kill bid and refund value
+            pendingBalance[buyer] = pendingBalance[buyer].add(bid.value);
+            tokenBids[contractAddress][tokenIndex] = Bid(
+                false,
+                tokenIndex,
+                address(0x0),
+                0
+            );
+        }
+
+        // Emit token events
+        emit TokenTransfer(contractAddress, seller, buyer, tokenIndex);
+        emit TokenNoLongerForSale(contractAddress, tokenIndex);
+        emit TokenBought(contractAddress, tokenIndex, amount, seller, buyer);
+    }
 }
