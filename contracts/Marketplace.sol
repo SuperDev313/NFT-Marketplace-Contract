@@ -30,4 +30,8 @@ contract Marketplace is ReentrancyGuard, Ownable {
         address royaltyPercent;
         string metadataURL;
     }
+    // Nested mapping for each collection's offers and bids
+    
+    mapping (address => mapping(uint256 => Offer)) public tokenOffers;
+    mapping (address => mapping(uint256 => Bid)) public tokenBids;
 }
