@@ -307,4 +307,27 @@ contract("Marketplace ERC-721", function (accounts) {
       "Only original bidder can withdraw this bid."
     );
   });
+
+  it("withdrawBidForToken removes bid for token", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // create bid
+    await this.mp.enterBidForToken(this.sample721.address, 0, {
+      from: accounts[1],
+      value: getPrice(1),
+    });
+    // try revoking offer
+    await expectEvent(
+      await this.mp.withdrawBidForToken(this.sample721.address, 0, {
+        from: accounts[1],
+      }),
+      "TokenBidWithdrawn"
+    );
+  });
 });
