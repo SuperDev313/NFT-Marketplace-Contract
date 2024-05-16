@@ -464,4 +464,27 @@ contract Marketplace is ReentrancyGuard, Ownable {
         pendingBalance[msg.sender] = 0;
         payable(msg.sender).transfer(amount);
     }
+
+    // Take cut for the project if royalties
+    function collectRoyalties(
+        address contractAddress,
+        address seller,
+        uint256 amount
+    ) private {
+        // ownerRoyalty = amount / (100 / royalty)
+        // sellerReceives = amount - ownerRoyalty
+        // amount = ownerRoyalty + sellerReceives
+        if (collectionState[contractAddress].royaltyPercent > 0) {
+            uint256 hundo = 100;
+            address owner = Ownable(contractAddress).owner();
+            uint256 collectionRoyalty = amount.div(
+                hundo.div(collectionState[contractAddress].royaltyPercent)
+            );
+            uint256 sellerAmount = amount.sub(collectionRoyalty);
+            pendingBalance[seller] = pendingBalance[seller].add(sellerAmount);
+            pendingBalance[owner] = pendingBalance[owner].add(
+                collectionRoyalty
+            );
+        }
+    }
 }
