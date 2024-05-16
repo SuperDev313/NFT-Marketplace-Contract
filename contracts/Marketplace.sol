@@ -149,8 +149,48 @@ contract Marketplace is ReentrancyGuard, Ownable {
     // Allows the owner of contract to remove their collections
     function disableCollection(
         address contractAddres
-    ) external collectionMustBeEnabled(contractAddress){
+    ) external collectionMustBeEnabled(contractAddress) {
         collectionState[contractAddres] = Collection(false, false, 0, "");
         emit CollectionDisabled(collectionAddress);
+    }
+
+    function offerTokenForSale(
+        address contractAddress,
+        uint256 tokenIndex,
+        uint256 minSalePriceInWei
+    )
+        external
+        collectionMustBeEnabled(contractAddress)
+        onlyIfTokenOwner(contractAddress, tokenIndex)
+        nonReentrant
+    {
+        if (collectionState[contractAddress].erc1155) {
+            require(
+                IERC1155(contractAddress).isApprovedForAll(
+                    msg.sender,
+                    address(this)
+                ),
+                "Marketplace not approved to spend token on seller behalf."
+            );
+        } else {
+            require(
+                IERC721(contractAddress).getApproved(tokenIndex) ==
+                    address(this),
+                "Marketplace not approved to spend token on seller behalf."
+            );
+        }
+        tokenOffers[contractAddress][tokenIndex] = Offer(
+            true,
+            tokenIndex,
+            msg.sender,
+            minSalePriceInWei,
+            address(0x0)
+        );
+        emit TokenOffered(
+            contractAddress,
+            tokenIndex,
+            minSalePriceInWei,
+            address(0x0)
+        );
     }
 }
