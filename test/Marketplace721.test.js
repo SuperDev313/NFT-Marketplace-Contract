@@ -431,4 +431,26 @@ contract("Marketplace ERC-721", function (accounts) {
       "Not enough Ether sent."
     );
   });
+
+  it("acceptOfferForToken requires seller ownership of token", async function () {
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.sample721.approve(this.mp.address, 0, { from: accounts[0] });
+    await this.mp.offerTokenForSale(this.sample721.address, 0, getPrice(1), {
+      from: accounts[0],
+    });
+    await this.sample721.safeTransferFrom(accounts[0], accounts[5], 0);
+    await expectRevert(
+      this.mp.acceptOfferForToken(this.sample721.address, 0, {
+        from: accounts[1],
+        value: getPrice(1),
+      }),
+      "Seller is no longer the owner, cannot accept offer."
+    );
+  });
 });
