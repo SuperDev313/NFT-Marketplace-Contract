@@ -163,4 +163,8 @@ contract("Marketplace ERC-721", function (accounts) {
       "You must own the token."
     );
   });
+
+  it('tokenNoLongerForSale revokes offer for token', async function () {
+    
+  }
 });
