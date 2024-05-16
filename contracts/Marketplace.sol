@@ -193,4 +193,24 @@ contract Marketplace is ReentrancyGuard, Ownable {
             address(0x0)
         );
     }
+
+    // Remove token listing (offer)
+    function tokenNoLongerForSale(
+        address contractAddress,
+        uint256 tokenIndex
+    )
+        public
+        collectionMustBeEnabled(contractAddress)
+        onlyIfTokenOwner(contractAddress, tokenIndex)
+        nonReentrant
+    {
+        tokenOffers[contractAddress][tokenIndex] = Offer(
+            false,
+            tokenIndex,
+            msg.sender,
+            0,
+            address(0x0)
+        );
+        emit TokenNoLongerForSale(contractAddress, tokenIndex);
+    }
 }
