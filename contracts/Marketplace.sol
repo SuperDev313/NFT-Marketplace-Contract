@@ -36,5 +36,6 @@ contract Marketplace is ReentrancyGuard, Ownable {
     mapping (address => mapping(uint256 => Bid)) public tokenBids;
 
     mapping (address => Collection) public collectionState;
-    
+
+    mapping(address => uint256) public pendingBalance;
 }
