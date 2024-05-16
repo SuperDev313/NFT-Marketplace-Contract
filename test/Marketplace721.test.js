@@ -192,7 +192,7 @@ contract("Marketplace ERC-721", function (accounts) {
     await expect(tokenDetails.minValue).to.be.bignumber.equal(getPrice(0));
     await expect(tokenDetails.onlySellTo).to.equal(nullAddress);
   });
-  
+
   it("enterBidForToken requires active contract", async function () {
     // try enterBidForToken when contract not enabled, should fail
     await expectRevert(
@@ -200,6 +200,24 @@ contract("Marketplace ERC-721", function (accounts) {
         from: accounts[1],
       }),
       "Collection must be enabled on this contract by project owner."
+    );
+  });
+
+  it("enterBidForToken should not require token ownership", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // try enterBidForToken as token owner, should fail
+    await expectRevert(
+      this.mp.enterBidForToken(this.sample721.address, 0, {
+        from: accounts[0],
+      }),
+      "Token owner cannot enter bid to self."
     );
   });
 });
