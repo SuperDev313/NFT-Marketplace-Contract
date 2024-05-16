@@ -16,5 +16,11 @@ contract Marketplace is ReentrancyGuard, Ownable {
         uint256 minValue;
         address onlySellTo;
     }
-    
+
+    struct Bid {
+        bool hasBid;
+        uint256 tokenIndex;
+        address bidder;
+        uint256 value;
+    }
 }
