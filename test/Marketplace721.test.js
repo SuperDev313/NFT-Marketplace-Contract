@@ -344,4 +344,23 @@ contract("Marketplace ERC-721", function (accounts) {
       "Collection must be enabled on this contract by project owner."
     );
   });
+  it("acceptOfferForToken cannot allow token ownership", async function () {
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.sample721.approve(this.mp.address, 0, { from: accounts[0] });
+    await this.mp.offerTokenForSale(this.sample721.address, 0, getPrice(1), {
+      from: accounts[0],
+    });
+    await expectRevert(
+      this.mp.acceptOfferForToken(this.sample721.address, 0, {
+        from: accounts[0],
+      }),
+      "Token owner cannot enter bid to self."
+    );
+  });
 });
