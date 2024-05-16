@@ -387,4 +387,19 @@ contract("Marketplace ERC-721", function (accounts) {
       "Marketplace not approved to spend token on seller behalf"
     );
   });
+  it("acceptOfferForToken requires an active sale/offer", async function () {
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await expectRevert(
+      this.mp.acceptOfferForToken(this.sample721.address, 0, {
+        from: accounts[1],
+      }),
+      "Token must be for sale by owner."
+    );
+  });
 });
