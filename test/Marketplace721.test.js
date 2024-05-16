@@ -140,4 +140,27 @@ contract("Marketplace ERC-721", function (accounts) {
       "Collection must be enabled on this contract by project owner."
     );
   });
+
+  it("tokenNoLongerForSale requires token ownership", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // offer token
+    await this.sample721.approve(this.mp.address, 0, { from: accounts[0] });
+    await this.mp.offerTokenForSale(this.sample721.address, 0, getPrice(5), {
+      from: accounts[0],
+    });
+    // try offerTokenForSale as wrong owner, should fail
+    await expectRevert(
+      this.mp.tokenNoLongerForSale(this.sample721.address, 0, {
+        from: accounts[1],
+      }),
+      "You must own the token."
+    );
+  });
 });
