@@ -77,4 +77,20 @@ contract Marketplace is ReentrancyGuard, Ownable {
     );
     event CollectionUpdated(address indexed collectionAddress);
     event CollectionDisabled(address indexed collectionAddress);
+
+    constructor() {}
+
+    modifier onlyIfTokenOwner(address contractAddress, uint256 tokenIndex) {
+        if (collectionState[contractAddress].erc1155) {
+            require(
+                IERC1155(contractAddress).balanceOf(msg.sender, tokenIndex) > 0,
+                "You must ownt the token"
+            );
+        } else {
+            require(
+                msg.sender == IERC(contractAddress).ownerOf(tokenIndex),
+                "You must own the token"
+            );
+        }
+    }
 }
