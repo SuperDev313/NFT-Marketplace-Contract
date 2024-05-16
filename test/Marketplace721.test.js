@@ -177,5 +177,12 @@ contract("Marketplace ERC-721", function (accounts) {
     await this.mp.offerTokenForSale(this.sample721.address, 0, getPrice(5), {
       from: accounts[0],
     });
+
+    await expectEvent(
+      await this.mp.tokenNoLongerForSale(this.sample721.address, 0, {
+        from: accounts[0],
+      }),
+      "TokenNoLongerForSale"
+    );
   });
 });
