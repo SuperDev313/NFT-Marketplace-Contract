@@ -8,4 +8,13 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract Marketplace is ReentrancyGuard, Ownable {
     using SafeMath for uint256;
+
+    struct Offer {
+        bool isForSale;
+        uint256 tokenIndex;
+        address seller;
+        uint256 minValue;
+        address onlySellTo;
+    }
+    
 }
