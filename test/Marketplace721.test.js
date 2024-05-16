@@ -86,6 +86,7 @@ contract("Marketplace ERC-721", function (accounts) {
     await expect(collectionDetails.royaltyPercent).to.be.bignumber.equal("0");
     await expect(collectionDetails.metadataURL).to.equal("");
   });
+
   it("offerTokenForSale requires active contract", async function () {
     // try offerTokenForSale when not enabled, should fail
     await expectRevert(
@@ -95,4 +96,21 @@ contract("Marketplace ERC-721", function (accounts) {
       "Collection must be enabled on this contract by project owner."
     );
   });
+
+  it("offerTokenForSale requires marketplace contract token approval", async function () {
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await expectRevert(
+      this.mp.offerTokenForSale(this.sample721.address, 0, getPrice(5), {
+        from: accounts[0],
+      }),
+      "Marketplace not approved to spend token on seller behalf"
+    );
+  });
+  
 });
