@@ -112,5 +112,16 @@ contract("Marketplace ERC-721", function (accounts) {
       "Marketplace not approved to spend token on seller behalf"
     );
   });
+
+  it('offerTokenForSale requires token ownership', async function () {
+    // update collection
+    await this.mp.updateCollection(this.sample721.address, false, 5, "ipfs://mynewhash", {from: accounts[0]});
+    // try offerTokenForSale as wrong owner, should fail
+    await expectRevert(
+      this.mp.offerTokenForSale(this.sample721.address, 0, getPrice(5), {from: accounts[1]}),
+      'You must own the token.'
+    );
+  });
+
   
 });
