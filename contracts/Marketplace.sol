@@ -93,4 +93,20 @@ contract Marketplace is ReentrancyGuard, Ownable {
             );
         }
     }
+
+    modifier notIfTokenOwner(address contractAddress, uint256 tokenIndex) {
+        if (collectionState[contractAddress].erc1155) {
+            require(
+                IERC1155(contractAddress).balanceOf(msg.sender, tokenIndex) ==
+                    0,
+                "Token owner cannot enter bid to self."
+            );
+        } else {
+            require(
+                msg.sender != IERC721(contractAddress).ownerOf(tokenIndex),
+                "Token owner cannot enter bid to self."
+            );
+        }
+        _;
+    }
 }
