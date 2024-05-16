@@ -61,4 +61,29 @@ contract("Marketplace ERC-721", function (accounts) {
       "You must own the contract."
     );
   });
+
+  it("disableCollection zeroes and disables collections", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      1,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // try disableCollection as contract owner, should succeed
+    await expectEvent(
+      await this.mp.disableCollection(this.sample721.address, {
+        from: accounts[0],
+      }),
+      "CollectionDisabled"
+    );
+    // should be zeroed out
+    let collectionDetails = await this.mp.collectionState(
+      this.sample721.address
+    );
+    await expect(collectionDetails.status).to.equal(false);
+    await expect(collectionDetails.royaltyPercent).to.be.bignumber.equal("0");
+    await expect(collectionDetails.metadataURL).to.equal("");
+  });
 });
