@@ -35,4 +35,14 @@ contract("Marketplace ERC-721", function (accounts) {
       "CollectionUpdated"
     );
   });
+
+  // disableCollection
+
+  it("disableCollection requires active contract", async function () {
+    // try disableCollection when not enabled, should fail
+    await expectRevert(
+      this.mp.disableCollection(this.sample721.address, { from: accounts[0] }),
+      "Collection must be enabled on this contract by project owner."
+    );
+  });
 });
