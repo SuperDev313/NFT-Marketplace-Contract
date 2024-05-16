@@ -184,5 +184,12 @@ contract("Marketplace ERC-721", function (accounts) {
       }),
       "TokenNoLongerForSale"
     );
+    // offer should be revoked, zeroed out
+    let tokenDetails = await this.mp.tokenOffers(this.sample721.address, 0);
+    await expect(tokenDetails.isForSale).to.equal(false);
+    await expect(tokenDetails.tokenIndex).to.be.bignumber.equal("0");
+    await expect(tokenDetails.seller).to.equal(accounts[0]);
+    await expect(tokenDetails.minValue).to.be.bignumber.equal(getPrice(0));
+    await expect(tokenDetails.onlySellTo).to.equal(nullAddress);
   });
 });
