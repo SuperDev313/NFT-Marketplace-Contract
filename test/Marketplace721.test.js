@@ -329,5 +329,11 @@ contract("Marketplace ERC-721", function (accounts) {
       }),
       "TokenBidWithdrawn"
     );
+
+    let bidDetails = await this.mp.tokenBids(this.sample721.address, 0);
+    await expect(bidDetails.hasBid).to.equal(false);
+    await expect(bidDetails.tokenIndex).to.be.bignumber.equal("0");
+    await expect(bidDetails.bidder).to.equal(nullAddress);
+    await expect(bidDetails.value).to.be.bignumber.equal(getPrice(0));
   });
 });
