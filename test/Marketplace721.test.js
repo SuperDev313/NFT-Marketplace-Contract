@@ -477,4 +477,24 @@ contract("Marketplace ERC-721", function (accounts) {
     await expect(offerDetail.minValue).to.be.bignumber.equal(getPrice(0));
     await expect(offerDetail.onlySellTo).to.equal(nullAddress);
   });
+
+  it("acceptOfferForToken transfers the token to buyer", async function () {
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await expect(await this.sample721.ownerOf(0)).to.equal(accounts[0]);
+    await this.sample721.approve(this.mp.address, 0, { from: accounts[0] });
+    await this.mp.offerTokenForSale(this.sample721.address, 0, getPrice(1), {
+      from: accounts[0],
+    });
+    await this.mp.acceptOfferForToken(this.sample721.address, 0, {
+      from: accounts[1],
+      value: getPrice(1),
+    });
+    await expect(await this.sample721.ownerOf(0)).to.equal(accounts[1]);
+  });
 });
