@@ -23,4 +23,11 @@ contract Marketplace is ReentrancyGuard, Ownable {
         address bidder;
         uint256 value;
     }
+
+    struct Collection {
+        bool status;
+        bool erc1155;
+        address royaltyPercent;
+        string metadataURL;
+    }
 }
