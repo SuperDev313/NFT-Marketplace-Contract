@@ -110,4 +110,12 @@ contract Marketplace is ReentrancyGuard, Ownable {
         }
         _;
     }
+
+    modifier onlyIfContractOwner(address contractAddress) {
+        require(
+            msg.sender == Ownable(contractAddress).owner(),
+            "You must own the contract"
+        );
+        _;
+    }
 }
