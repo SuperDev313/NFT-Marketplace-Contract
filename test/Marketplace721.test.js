@@ -173,5 +173,9 @@ contract("Marketplace ERC-721", function (accounts) {
       "ipfs://mynewhash",
       { from: accounts[0] }
     );
+    await this.sample721.approve(this.mp.address, 0, { from: accounts[0] });
+    await this.mp.offerTokenForSale(this.sample721.address, 0, getPrice(5), {
+      from: accounts[0],
+    });
   });
 });
