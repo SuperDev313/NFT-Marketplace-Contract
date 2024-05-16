@@ -31,11 +31,50 @@ contract Marketplace is ReentrancyGuard, Ownable {
         string metadataURL;
     }
     // Nested mapping for each collection's offers and bids
-    
-    mapping (address => mapping(uint256 => Offer)) public tokenOffers;
-    mapping (address => mapping(uint256 => Bid)) public tokenBids;
 
-    mapping (address => Collection) public collectionState;
+    mapping(address => mapping(uint256 => Offer)) public tokenOffers;
+    mapping(address => mapping(uint256 => Bid)) public tokenBids;
+
+    mapping(address => Collection) public collectionState;
 
     mapping(address => uint256) public pendingBalance;
+
+    // Log events
+    event TokenTransfer(
+        address indexed collectionAddress,
+        address indexed from,
+        address indexed to,
+        uint256 tokenIndex
+    );
+    event TokenOffered(
+        address indexed collectionAddress,
+        uint256 indexed tokenIndex,
+        uint256 minValue,
+        address indexed toAddress
+    );
+    event TokenBidEntered(
+        address indexed collectionAddress,
+        uint256 indexed tokenIndex,
+        uint256 value,
+        address indexed fromAddress
+    );
+    event TokenBidWithdrawn(
+        address indexed collectionAddress,
+        uint256 indexed tokenIndex,
+        uint256 value,
+        address indexed fromAddress
+    );
+    event TokenBought(
+        address indexed collectionAddress,
+        uint256 indexed tokenIndex,
+        uint256 value,
+        address fromAddress,
+        address toAddress
+    );
+    event TokenNoLongerForSale(
+        address indexed collectionAddress,
+        uint256 indexed tokenIndex
+    );
+    event CollectionUpdated(address indexed collectionAddress);
+    event CollectionDisabled(address indexed collectionAddress);
 }
