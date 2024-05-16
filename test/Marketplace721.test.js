@@ -192,4 +192,14 @@ contract("Marketplace ERC-721", function (accounts) {
     await expect(tokenDetails.minValue).to.be.bignumber.equal(getPrice(0));
     await expect(tokenDetails.onlySellTo).to.equal(nullAddress);
   });
+  
+  it("enterBidForToken requires active contract", async function () {
+    // try enterBidForToken when contract not enabled, should fail
+    await expectRevert(
+      this.mp.enterBidForToken(this.sample721.address, 0, {
+        from: accounts[1],
+      }),
+      "Collection must be enabled on this contract by project owner."
+    );
+  });
 });
