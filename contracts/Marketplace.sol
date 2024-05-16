@@ -126,4 +126,23 @@ contract Marketplace is ReentrancyGuard, Ownable {
         );
         _;
     }
+
+    //Allow owners of contracts to update their collection details
+
+    function updateCollection(
+        address contractAddress,
+        bool erc1155,
+        uint256 royaltyPercent,
+        string memory metadataURL
+    ) external onlyIfContractOwner(contractAddress) {
+        require(royaltyPercent >= 0, "Must be greater than or equal to 0.");
+        require(royaltyPercent <= 100, "Cannot exceed 100%");
+        collectionState[contractAddress] = Collection(
+            true,
+            erc1155,
+            royaltyPercent,
+            metadataURL
+        );
+        emit CollectionUpdated(contractAddress);
+    }
 }
