@@ -164,7 +164,14 @@ contract("Marketplace ERC-721", function (accounts) {
     );
   });
 
-  it('tokenNoLongerForSale revokes offer for token', async function () {
-    
-  }
+  it("tokenNoLongerForSale revokes offer for token", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+  });
 });
