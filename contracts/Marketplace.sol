@@ -248,5 +248,35 @@ contract Marketplace is ReentrancyGuard, Ownable {
             msg.sender
         );
     }
-    
+    // Remove an open bid on a token
+    function withdrawBidForToken(
+        address contractAddress,
+        uint256 tokenIndex
+    )
+        external
+        payable
+        collectionMustBeEnabled(contractAddress)
+        notIfTokenOwner(contractAddress, tokenIndex)
+        nonReentrant
+    {
+        Bid memory bid = tokenBids[contractAddress][tokenIndex];
+        require(
+            msg.sender == bid.bidder,
+            "Only original bidder can withdraw this bid."
+        );
+        emit TokenBidWithdrawn(
+            contractAddress,
+            tokenIndex,
+            bid.value,
+            msg.sender
+        );
+        uint256 amount = bid.value;
+        tokenBids[contractAddress][tokenIndex] = Bid(
+            false,
+            tokenIndex,
+            address(0x0),
+            0
+        );
+        payable(msg.sender).transfer(amount);
+    }
 }
