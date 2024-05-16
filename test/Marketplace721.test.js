@@ -284,4 +284,27 @@ contract("Marketplace ERC-721", function (accounts) {
       "Token owner cannot enter bid to self."
     );
   });
+
+  it("withdrawBidForToken should require bid ownership", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // create bid
+    await this.mp.enterBidForToken(this.sample721.address, 0, {
+      from: accounts[1],
+      value: getPrice(1),
+    });
+    // try withdrawBidForToken as not bid owner, should fail
+    await expectRevert(
+      this.mp.withdrawBidForToken(this.sample721.address, 0, {
+        from: accounts[2],
+      }),
+      "Only original bidder can withdraw this bid."
+    );
+  });
 });
