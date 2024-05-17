@@ -765,4 +765,42 @@ contract("Marketplace ERC-1155", function (accounts) {
       getPrice(1 - royaltyAmount)
     );
   });
+
+  it("acceptBidForToken requires active contract", async function () {
+    await expectRevert(
+      this.mp.acceptBidForToken(this.sample1155.address, 1, getPrice(1), {
+        from: accounts[1],
+      }),
+      "Collection must be enabled on this contract by project owner."
+    );
+  });
+
+  it("acceptBidForToken requires token ownership", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.mp.enterBidForToken(this.sample1155.address, 1, {
+      from: accounts[1],
+      value: getPrice(0.5),
+    });
+    await this.sample1155.setApprovalForAll(this.mp.address, true, {
+      from: accounts[0],
+    });
+    await expectRevert(
+      this.mp.acceptBidForToken(this.sample1155.address, 1, getPrice(0.5), {
+        from: accounts[1],
+      }),
+      "You must own the token."
+    );
+    await expectRevert(
+      this.mp.acceptBidForToken(this.sample1155.address, 1, getPrice(0.5), {
+        from: accounts[2],
+      }),
+      "You must own the token."
+    );
+  });
 });
