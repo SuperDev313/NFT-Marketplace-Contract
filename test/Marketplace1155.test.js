@@ -428,4 +428,27 @@ contract("Marketplace ERC-1155", function (accounts) {
       "Collection must be enabled on this contract by project owner."
     );
   });
+
+  it("withdrawBidForToken cannot allow token ownership", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // create bid
+    await this.mp.enterBidForToken(this.sample1155.address, 1, {
+      from: accounts[1],
+      value: getPrice(1),
+    });
+    // try withdrawBidForToken as token owner, should fail
+    await expectRevert(
+      this.mp.withdrawBidForToken(this.sample1155.address, 1, {
+        from: accounts[0],
+      }),
+      "Token owner cannot enter bid to self."
+    );
+  });
 });
