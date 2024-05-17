@@ -788,4 +788,38 @@ contract("Marketplace ERC-1155", function (accounts) {
       "Bid must be greater than minimum price."
     );
   });
+  it("acceptBidForToken transfers the token to buyer", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      10,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await expect(
+      await this.sample1155.balanceOf(accounts[0], 1)
+    ).to.be.bignumber.equal("1");
+    await expect(
+      await this.sample1155.balanceOf(accounts[1], 1)
+    ).to.be.bignumber.equal("0");
+    await this.mp.enterBidForToken(this.sample1155.address, 1, {
+      from: accounts[1],
+      value: getPrice(0.8),
+    });
+    await this.sample1155.setApprovalForAll(this.mp.address, true, {
+      from: accounts[0],
+    });
+    await this.mp.acceptBidForToken(
+      this.sample1155.address,
+      1,
+      getPrice(0.75),
+      { from: accounts[0] }
+    );
+    await expect(
+      await this.sample1155.balanceOf(accounts[0], 1)
+    ).to.be.bignumber.equal("0");
+    await expect(
+      await this.sample1155.balanceOf(accounts[1], 1)
+    ).to.be.bignumber.equal("1");
+  });
 });
