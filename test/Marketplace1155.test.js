@@ -418,4 +418,14 @@ contract("Marketplace ERC-1155", function (accounts) {
     await expect(bidDetails.bidder).to.equal(accounts[1]);
     await expect(bidDetails.value).to.be.bignumber.equal(getPrice(1));
   });
+
+  it("withdrawBidForToken requires active contract", async function () {
+    // try enterBidForToken when contract not enabled, should fail
+    await expectRevert(
+      this.mp.withdrawBidForToken(this.sample1155.address, 1, {
+        from: accounts[1],
+      }),
+      "Collection must be enabled on this contract by project owner."
+    );
+  });
 });
