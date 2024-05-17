@@ -743,4 +743,25 @@ contract("Marketplace ERC-721", function (accounts) {
       "Bid must be active."
     );
   });
+
+  it("acceptBidForToken requires bid amount to be greater than seller minimum", async function () {
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.mp.enterBidForToken(this.sample721.address, 0, {
+      from: accounts[1],
+      value: getPrice(0.5),
+    });
+    await this.sample721.approve(this.mp.address, 0, { from: accounts[0] });
+    await expectRevert(
+      this.mp.acceptBidForToken(this.sample721.address, 0, getPrice(0.501), {
+        from: accounts[0],
+      }),
+      "Bid must be greater than minimum price."
+    );
+  });
 });
