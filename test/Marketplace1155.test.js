@@ -749,4 +749,20 @@ contract("Marketplace ERC-1155", function (accounts) {
       "Marketplace not approved to spend token on seller behalf."
     );
   });
+
+  it("acceptBidForToken requires active bid", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await expectRevert(
+      this.mp.acceptBidForToken(this.sample1155.address, 1, getPrice(0.5), {
+        from: accounts[0],
+      }),
+      "Bid must be active."
+    );
+  });
 });
