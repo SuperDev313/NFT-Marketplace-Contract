@@ -369,4 +369,22 @@ contract("Marketplace ERC-1155", function (accounts) {
       "Collection must be enabled on this contract by project owner."
     );
   });
+
+  it("enterBidForToken should not require token ownership", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // try enterBidForToken as token owner, should fail
+    await expectRevert(
+      this.mp.enterBidForToken(this.sample1155.address, 1, {
+        from: accounts[0],
+      }),
+      "Token owner cannot enter bid to self."
+    );
+  });
 });
