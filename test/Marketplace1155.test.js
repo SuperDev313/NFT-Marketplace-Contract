@@ -387,4 +387,35 @@ contract("Marketplace ERC-1155", function (accounts) {
       "Token owner cannot enter bid to self."
     );
   });
+
+  it("enterBidForToken creates bid for token", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // should be no bid
+    await expect(
+      (
+        await this.mp.tokenBids(this.sample1155.address, 1)
+      ).hasBid
+    ).to.equal(false);
+    // try revoking offer
+    await expectEvent(
+      await this.mp.enterBidForToken(this.sample1155.address, 1, {
+        from: accounts[1],
+        value: getPrice(1),
+      }),
+      "TokenBidEntered"
+    );
+    // bid should be in
+    let bidDetails = await this.mp.tokenBids(this.sample1155.address, 1);
+    await expect(bidDetails.hasBid).to.equal(true);
+    await expect(bidDetails.tokenIndex).to.be.bignumber.equal("1");
+    await expect(bidDetails.bidder).to.equal(accounts[1]);
+    await expect(bidDetails.value).to.be.bignumber.equal(getPrice(1));
+  });
 });
