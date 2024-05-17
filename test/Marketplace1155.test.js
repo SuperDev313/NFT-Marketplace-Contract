@@ -822,4 +822,32 @@ contract("Marketplace ERC-1155", function (accounts) {
       await this.sample1155.balanceOf(accounts[1], 1)
     ).to.be.bignumber.equal("1");
   });
+
+  it("acceptBidForToken removes existing bid", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      10,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.mp.enterBidForToken(this.sample1155.address, 1, {
+      from: accounts[1],
+      value: getPrice(0.8),
+    });
+    await this.sample1155.setApprovalForAll(this.mp.address, true, {
+      from: accounts[0],
+    });
+    await this.mp.acceptBidForToken(
+      this.sample1155.address,
+      1,
+      getPrice(0.75),
+      { from: accounts[0] }
+    );
+    let bidDetails = await this.mp.tokenBids(this.sample1155.address, 1);
+    await expect(bidDetails.hasBid).to.equal(false);
+    await expect(bidDetails.tokenIndex).to.be.bignumber.equal("1");
+    await expect(bidDetails.bidder).to.equal(nullAddress);
+    await expect(bidDetails.value).to.be.bignumber.equal(getPrice(0));
+  });
 });
