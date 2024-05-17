@@ -765,19 +765,4 @@ contract("Marketplace ERC-1155", function (accounts) {
       getPrice(1 - royaltyAmount)
     );
   });
-
-    await this.mp.updateCollection(
-      this.sample1155.address,
-      true,
-      5,
-      "ipfs://mynewhash",
-      { from: accounts[0] }
-    );
-    await this.mp.enterBidForToken(this.sample1155.address, 1, {
-      from: accounts[1],
-      value: getPrice(0.5),
-    });
-
-    );
-  });
 });
