@@ -857,4 +857,43 @@ contract("Marketplace ERC-721", function (accounts) {
       getPrice(1 - royaltyAmount)
     );
   });
+
+  it("withdraw sends only allocated funds to msg.sender", async function () {
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      10,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.mp.enterBidForToken(this.sample721.address, 0, {
+      from: accounts[1],
+      value: getPrice(0.5),
+    });
+    await this.mp.enterBidForToken(this.sample721.address, 0, {
+      from: accounts[2],
+      value: getPrice(0.525),
+    });
+    await this.mp.enterBidForToken(this.sample721.address, 0, {
+      from: accounts[3],
+      value: getPrice(0.55),
+    });
+    // bids beaten should be returned to accounts 1 and 2
+    await expect(
+      await this.mp.pendingBalance(accounts[1])
+    ).to.be.bignumber.equal(getPrice(0.5));
+    await expect(
+      await this.mp.pendingBalance(accounts[2])
+    ).to.be.bignumber.equal(getPrice(0.525));
+    // withdraw from those accounts
+    await this.mp.withdraw({ from: accounts[1] });
+    await this.mp.withdraw({ from: accounts[2] });
+    // balances should be 0
+    await expect(
+      await this.mp.pendingBalance(accounts[1])
+    ).to.be.bignumber.equal(getPrice(0));
+    await expect(
+      await this.mp.pendingBalance(accounts[2])
+    ).to.be.bignumber.equal(getPrice(0));
+  });
 });
