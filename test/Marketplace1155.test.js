@@ -231,4 +231,19 @@ contract("Marketplace ERC-1155", function (accounts) {
       "Collection must be enabled on this contract by project owner."
     );
   });
+  it("offerTokenForSale requires marketplace contract token approval", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await expectRevert(
+      this.mp.offerTokenForSale(this.sample1155.address, 1, getPrice(5), {
+        from: accounts[0],
+      }),
+      "Marketplace not approved to spend token on seller behalf."
+    );
+  });
 });
