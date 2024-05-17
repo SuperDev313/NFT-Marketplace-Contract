@@ -707,4 +707,24 @@ contract("Marketplace ERC-721", function (accounts) {
       "You must own the token."
     );
   });
+
+  it("acceptBidForToken requires marketplace contract token approval", async function () {
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.mp.enterBidForToken(this.sample721.address, 0, {
+      from: accounts[1],
+      value: getPrice(0.5),
+    });
+    await expectRevert(
+      this.mp.acceptBidForToken(this.sample721.address, 0, getPrice(0.5), {
+        from: accounts[0],
+      }),
+      "Marketplace not approved to spend token on seller behalf"
+    );
+  });
 });
