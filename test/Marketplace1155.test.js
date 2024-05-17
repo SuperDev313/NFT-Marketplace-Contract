@@ -729,4 +729,40 @@ contract("Marketplace ERC-1155", function (accounts) {
       await this.sample1155.balanceOf(accounts[1], 1)
     ).to.be.bignumber.equal("1");
   });
+
+  it("acceptOfferForToken gives seller the proper sale amount less royalty", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.sample1155.mint(5, 10, { from: accounts[1] }); // mint 10 more as new address for token 5
+    await expect(
+      await this.sample1155.balanceOf(accounts[1], 5)
+    ).to.be.bignumber.equal("10");
+    await this.sample1155.setApprovalForAll(this.mp.address, true, {
+      from: accounts[1],
+    });
+    await this.mp.offerTokenForSale(this.sample1155.address, 5, getPrice(1), {
+      from: accounts[1],
+    });
+    await this.mp.acceptOfferForToken(this.sample1155.address, 5, {
+      from: accounts[2],
+      value: getPrice(1),
+    });
+    await expect(
+      await this.sample1155.balanceOf(accounts[1], 5)
+    ).to.be.bignumber.equal("9");
+    await expect(
+      await this.sample1155.balanceOf(accounts[2], 5)
+    ).to.be.bignumber.equal("1");
+    let sellerBalance = await this.mp.pendingBalance(accounts[1]);
+
+    let royaltyAmount = 1 / (100 / 5);
+    await expect(sellerBalance).to.be.bignumber.equal(
+      getPrice(1 - royaltyAmount)
+    );
+  });
 });
