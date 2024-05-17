@@ -169,4 +169,56 @@ contract("Marketplace ERC-1155", function (accounts) {
       await this.mp.pendingBalance(accounts[2])
     ).to.be.bignumber.equal(getPrice(0));
   });
+
+  // disableCollection
+
+  it("disableCollection requires active contract", async function () {
+    // try disableCollection when not enabled, should fail
+    await expectRevert(
+      this.mp.disableCollection(this.sample1155.address, { from: accounts[0] }),
+      "Collection must be enabled on this contract by project owner."
+    );
+  });
+
+  it("disableCollection requires contract ownership", async function () {
+    // enable/update collection
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      1,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // try disableCollection as wrong owner, should fail
+    await expectRevert(
+      this.mp.disableCollection(this.sample1155.address, { from: accounts[1] }),
+      "You must own the contract."
+    );
+  });
+
+  it("disableCollection zeroes and disables collections", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      1,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // try disableCollection as contract owner, should succeed
+    await expectEvent(
+      await this.mp.disableCollection(this.sample1155.address, {
+        from: accounts[0],
+      }),
+      "CollectionDisabled"
+    );
+    // should be zeroed out
+    let collectionDetails = await this.mp.collectionState(
+      this.sample1155.address
+    );
+    await expect(collectionDetails.status).to.equal(false);
+    await expect(collectionDetails.erc1155).to.equal(false);
+    await expect(collectionDetails.royaltyPercent).to.be.bignumber.equal("0");
+    await expect(collectionDetails.metadataURL).to.equal("");
+  });
 });
