@@ -327,4 +327,46 @@ contract("Marketplace ERC-1155", function (accounts) {
       "You must own the token."
     );
   });
+
+  it("tokenNoLongerForSale revokes offer for token", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // offer token
+    await this.sample1155.setApprovalForAll(this.mp.address, true, {
+      from: accounts[0],
+    });
+    await this.mp.offerTokenForSale(this.sample1155.address, 1, getPrice(5), {
+      from: accounts[0],
+    });
+    // try revoking offer
+    await expectEvent(
+      await this.mp.tokenNoLongerForSale(this.sample1155.address, 1, {
+        from: accounts[0],
+      }),
+      "TokenNoLongerForSale"
+    );
+    // offer should be revoked, zeroed out
+    let tokenDetails = await this.mp.tokenOffers(this.sample1155.address, 1);
+    await expect(tokenDetails.isForSale).to.equal(false);
+    await expect(tokenDetails.tokenIndex).to.be.bignumber.equal("1");
+    await expect(tokenDetails.seller).to.equal(accounts[0]);
+    await expect(tokenDetails.minValue).to.be.bignumber.equal(getPrice(0));
+    await expect(tokenDetails.onlySellTo).to.equal(nullAddress);
+  });
+
+  it("enterBidForToken requires active contract", async function () {
+    // try enterBidForToken when contract not enabled, should fail
+    await expectRevert(
+      this.mp.enterBidForToken(this.sample1155.address, 1, {
+        from: accounts[1],
+      }),
+      "Collection must be enabled on this contract by project owner."
+    );
+  });
 });
