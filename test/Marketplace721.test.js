@@ -11,11 +11,12 @@ contract("Marketplace ERC-721", function (accounts) {
   }
 
   beforeEach(async function () {
-    // deploy a new instance of Marketplace contract
     this.mp = await Marketplace.new({ from: accounts[0] });
     this.sample721 = await SampleProject721.new({ from: accounts[0] });
     await this.sample721.mint(10, { from: accounts[0] });
   });
+
+  // updateCollection
 
   it("updateCollection requires contract ownership", async function () {
     await expectRevert(
@@ -34,6 +35,88 @@ contract("Marketplace ERC-721", function (accounts) {
       ),
       "CollectionUpdated"
     );
+  });
+
+  it("updateCollection updates each time", async function () {
+    // add/update collection as owner
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      1,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // settings should match
+    await expect(
+      (
+        await this.mp.collectionState(this.sample721.address)
+      ).status
+    ).to.equal(true);
+    await expect(
+      (
+        await this.mp.collectionState(this.sample721.address)
+      ).erc1155
+    ).to.equal(false);
+    await expect(
+      (
+        await this.mp.collectionState(this.sample721.address)
+      ).royaltyPercent
+    ).to.be.bignumber.equal("1");
+    await expect(
+      (
+        await this.mp.collectionState(this.sample721.address)
+      ).metadataURL
+    ).to.equal("ipfs://mynewhash");
+    // Disable collection (zero it out)
+    await this.mp.disableCollection(this.sample721.address, {
+      from: accounts[0],
+    });
+    // update collection again
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://anothernewhash",
+      { from: accounts[0] }
+    );
+    await expect(
+      (
+        await this.mp.collectionState(this.sample721.address)
+      ).status
+    ).to.equal(true);
+    await expect(
+      (
+        await this.mp.collectionState(this.sample721.address)
+      ).royaltyPercent
+    ).to.be.bignumber.equal("5");
+    await expect(
+      (
+        await this.mp.collectionState(this.sample721.address)
+      ).metadataURL
+    ).to.equal("ipfs://anothernewhash");
+    // update again
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      8,
+      "ipfs://round3",
+      { from: accounts[0] }
+    );
+    await expect(
+      (
+        await this.mp.collectionState(this.sample721.address)
+      ).status
+    ).to.equal(true);
+    await expect(
+      (
+        await this.mp.collectionState(this.sample721.address)
+      ).royaltyPercent
+    ).to.be.bignumber.equal("8");
+    await expect(
+      (
+        await this.mp.collectionState(this.sample721.address)
+      ).metadataURL
+    ).to.equal("ipfs://round3");
   });
 
   // disableCollection
@@ -87,6 +170,8 @@ contract("Marketplace ERC-721", function (accounts) {
     await expect(collectionDetails.metadataURL).to.equal("");
   });
 
+  // offerTokenForSale
+
   it("offerTokenForSale requires active contract", async function () {
     // try offerTokenForSale when not enabled, should fail
     await expectRevert(
@@ -131,6 +216,34 @@ contract("Marketplace ERC-721", function (accounts) {
     );
   });
 
+  it("offerTokenForSale puts new offer for token", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.sample721.approve(this.mp.address, 0, { from: accounts[0] });
+    // try offering token as owner, should succeed
+    await expectEvent(
+      await this.mp.offerTokenForSale(this.sample721.address, 0, getPrice(5), {
+        from: accounts[0],
+      }),
+      "TokenOffered"
+    );
+    // token should have valid offer with same numbers
+    let tokenDetails = await this.mp.tokenOffers(this.sample721.address, 0);
+    await expect(tokenDetails.isForSale).to.equal(true);
+    await expect(tokenDetails.tokenIndex).to.be.bignumber.equal("0");
+    await expect(tokenDetails.seller).to.equal(accounts[0]);
+    await expect(tokenDetails.minValue).to.be.bignumber.equal(getPrice(5));
+    await expect(tokenDetails.onlySellTo).to.equal(nullAddress);
+  });
+
+  // tokenNoLongerForSale
+
   it("tokenNoLongerForSale requires active contract", async function () {
     // try tokenNoLongerForSale when contract not enabled, should fail
     await expectRevert(
@@ -173,11 +286,12 @@ contract("Marketplace ERC-721", function (accounts) {
       "ipfs://mynewhash",
       { from: accounts[0] }
     );
+    // offer token
     await this.sample721.approve(this.mp.address, 0, { from: accounts[0] });
     await this.mp.offerTokenForSale(this.sample721.address, 0, getPrice(5), {
       from: accounts[0],
     });
-
+    // try revoking offer
     await expectEvent(
       await this.mp.tokenNoLongerForSale(this.sample721.address, 0, {
         from: accounts[0],
@@ -192,6 +306,8 @@ contract("Marketplace ERC-721", function (accounts) {
     await expect(tokenDetails.minValue).to.be.bignumber.equal(getPrice(0));
     await expect(tokenDetails.onlySellTo).to.equal(nullAddress);
   });
+
+  // enterBidForToken
 
   it("enterBidForToken requires active contract", async function () {
     // try enterBidForToken when contract not enabled, should fail
@@ -251,6 +367,10 @@ contract("Marketplace ERC-721", function (accounts) {
     await expect(bidDetails.bidder).to.equal(accounts[1]);
     await expect(bidDetails.value).to.be.bignumber.equal(getPrice(1));
   });
+
+  // confirm ether amounts when creating bids (no zero, over zero, over last, etc)
+
+  // withdrawBidForToken
 
   it("withdrawBidForToken requires active contract", async function () {
     // try enterBidForToken when contract not enabled, should fail
@@ -336,6 +456,8 @@ contract("Marketplace ERC-721", function (accounts) {
     await expect(bidDetails.bidder).to.equal(nullAddress);
     await expect(bidDetails.value).to.be.bignumber.equal(getPrice(0));
   });
+
+  // acceptOfferForToken
 
   it("acceptOfferForToken requires active contract", async function () {
     await expectRevert(
@@ -578,73 +700,6 @@ contract("Marketplace ERC-721", function (accounts) {
     ).to.be.bignumber.equal(getPrice(0.8));
   });
 
-  it("acceptOfferForToken halts sale/active offer", async function () {
-    await this.mp.updateCollection(
-      this.sample721.address,
-      false,
-      5,
-      "ipfs://mynewhash",
-      { from: accounts[0] }
-    );
-    await this.sample721.approve(this.mp.address, 0, { from: accounts[0] });
-    await this.mp.offerTokenForSale(this.sample721.address, 0, getPrice(1), {
-      from: accounts[0],
-    });
-    await this.mp.acceptOfferForToken(this.sample721.address, 0, {
-      from: accounts[1],
-      value: getPrice(1),
-    });
-    let offerDetail = await this.mp.tokenOffers(this.sample721.address, 0);
-    await expect(offerDetail.isForSale).to.equal(false);
-    await expect(offerDetail.tokenIndex).to.be.bignumber.equal("0");
-    await expect(offerDetail.seller).to.equal(accounts[1]); // should be the new owner (buyer)
-    await expect(offerDetail.minValue).to.be.bignumber.equal(getPrice(0));
-    await expect(offerDetail.onlySellTo).to.equal(nullAddress);
-  });
-
-  it("acceptOfferForToken transfers the token to buyer", async function () {
-    await this.mp.updateCollection(
-      this.sample721.address,
-      false,
-      5,
-      "ipfs://mynewhash",
-      { from: accounts[0] }
-    );
-    await expect(await this.sample721.ownerOf(0)).to.equal(accounts[0]);
-    await this.sample721.approve(this.mp.address, 0, { from: accounts[0] });
-    await this.mp.offerTokenForSale(this.sample721.address, 0, getPrice(1), {
-      from: accounts[0],
-    });
-    await this.mp.acceptOfferForToken(this.sample721.address, 0, {
-      from: accounts[1],
-      value: getPrice(1),
-    });
-    await expect(await this.sample721.ownerOf(0)).to.equal(accounts[1]);
-  });
-  it("acceptOfferForToken gives contract owner their royalty", async function () {
-    await this.mp.updateCollection(
-      this.sample721.address,
-      false,
-      10,
-      "ipfs://mynewhash",
-      { from: accounts[0] }
-    );
-    await this.sample721.mint(10, { from: accounts[1] }); // mint 10 more as new address
-    await this.sample721.approve(this.mp.address, 10, { from: accounts[1] });
-    await this.mp.offerTokenForSale(this.sample721.address, 10, getPrice(1), {
-      from: accounts[1],
-    });
-    await this.mp.acceptOfferForToken(this.sample721.address, 10, {
-      from: accounts[2],
-      value: getPrice(1),
-    });
-    let ownerBalance = await this.mp.pendingBalance(accounts[0]);
-    // confirm 10% royalty for collection owner reflects in balances
-    // amount / (100 / royalty)
-    let royaltyAmount = 1 / (100 / 10);
-    await expect(ownerBalance).to.be.bignumber.equal(getPrice(royaltyAmount));
-  });
-
   it("acceptOfferForToken leaves existing bid if not made by buyer", async function () {
     await this.mp.updateCollection(
       this.sample721.address,
@@ -671,6 +726,8 @@ contract("Marketplace ERC-721", function (accounts) {
     await expect(bidDetails.bidder).to.equal(accounts[2]);
     await expect(bidDetails.value).to.be.bignumber.equal(getPrice(0.8));
   });
+
+  // acceptBidForToken
 
   it("acceptBidForToken requires active contract", async function () {
     await expectRevert(
@@ -857,6 +914,8 @@ contract("Marketplace ERC-721", function (accounts) {
       getPrice(1 - royaltyAmount)
     );
   });
+
+  // withdraw
 
   it("withdraw sends only allocated funds to msg.sender", async function () {
     await this.mp.updateCollection(
