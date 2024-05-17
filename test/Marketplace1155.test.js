@@ -131,45 +131,6 @@ contract("Marketplace ERC-1155", function (accounts) {
     ).to.equal("ipfs://round3");
   });
 
-  it("withdraw sends only allocated funds to msg.sender", async function () {
-    await this.mp.updateCollection(
-      this.sample1155.address,
-      true,
-      10,
-      "ipfs://mynewhash",
-      { from: accounts[0] }
-    );
-    await this.mp.enterBidForToken(this.sample1155.address, 1, {
-      from: accounts[1],
-      value: getPrice(0.5),
-    });
-    await this.mp.enterBidForToken(this.sample1155.address, 1, {
-      from: accounts[2],
-      value: getPrice(0.525),
-    });
-    await this.mp.enterBidForToken(this.sample1155.address, 1, {
-      from: accounts[3],
-      value: getPrice(0.55),
-    });
-    // bids beaten should be returned to accounts 1 and 2
-    await expect(
-      await this.mp.pendingBalance(accounts[1])
-    ).to.be.bignumber.equal(getPrice(0.5));
-    await expect(
-      await this.mp.pendingBalance(accounts[2])
-    ).to.be.bignumber.equal(getPrice(0.525));
-    // withdraw from those accounts
-    await this.mp.withdraw({ from: accounts[1] });
-    await this.mp.withdraw({ from: accounts[2] });
-    // balances should be 0
-    await expect(
-      await this.mp.pendingBalance(accounts[1])
-    ).to.be.bignumber.equal(getPrice(0));
-    await expect(
-      await this.mp.pendingBalance(accounts[2])
-    ).to.be.bignumber.equal(getPrice(0));
-  });
-
   // disableCollection
 
   it("disableCollection requires active contract", async function () {
@@ -222,6 +183,8 @@ contract("Marketplace ERC-1155", function (accounts) {
     await expect(collectionDetails.metadataURL).to.equal("");
   });
 
+  // offerTokenForSale
+
   it("offerTokenForSale requires active contract", async function () {
     // try offerTokenForSale when not enabled, should fail
     await expectRevert(
@@ -231,6 +194,7 @@ contract("Marketplace ERC-1155", function (accounts) {
       "Collection must be enabled on this contract by project owner."
     );
   });
+
   it("offerTokenForSale requires marketplace contract token approval", async function () {
     await this.mp.updateCollection(
       this.sample1155.address,
@@ -292,6 +256,8 @@ contract("Marketplace ERC-1155", function (accounts) {
     await expect(tokenDetails.minValue).to.be.bignumber.equal(getPrice(5));
     await expect(tokenDetails.onlySellTo).to.equal(nullAddress);
   });
+
+  // tokenNoLongerForSale
 
   it("tokenNoLongerForSale requires active contract", async function () {
     // try tokenNoLongerForSale when contract not enabled, should fail
@@ -360,6 +326,8 @@ contract("Marketplace ERC-1155", function (accounts) {
     await expect(tokenDetails.onlySellTo).to.equal(nullAddress);
   });
 
+  // enterBidForToken
+
   it("enterBidForToken requires active contract", async function () {
     // try enterBidForToken when contract not enabled, should fail
     await expectRevert(
@@ -418,6 +386,10 @@ contract("Marketplace ERC-1155", function (accounts) {
     await expect(bidDetails.bidder).to.equal(accounts[1]);
     await expect(bidDetails.value).to.be.bignumber.equal(getPrice(1));
   });
+
+  // confirm ether amounts when creating bids (no zero, over zero, over last, etc)
+
+  // withdrawBidForToken
 
   it("withdrawBidForToken requires active contract", async function () {
     // try enterBidForToken when contract not enabled, should fail
@@ -503,6 +475,8 @@ contract("Marketplace ERC-1155", function (accounts) {
     await expect(bidDetails.bidder).to.equal(nullAddress);
     await expect(bidDetails.value).to.be.bignumber.equal(getPrice(0));
   });
+
+  // acceptOfferForToken
 
   it("acceptOfferForToken requires active contract", async function () {
     await expectRevert(
@@ -663,6 +637,38 @@ contract("Marketplace ERC-1155", function (accounts) {
     await expect(offerDetail.onlySellTo).to.equal(nullAddress);
   });
 
+  it("acceptOfferForToken transfers the token to buyer", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await expect(
+      await this.sample1155.balanceOf(accounts[0], 1)
+    ).to.be.bignumber.equal("1");
+    await expect(
+      await this.sample1155.balanceOf(accounts[1], 1)
+    ).to.be.bignumber.equal("0");
+    await this.sample1155.setApprovalForAll(this.mp.address, true, {
+      from: accounts[0],
+    });
+    await this.mp.offerTokenForSale(this.sample1155.address, 1, getPrice(1), {
+      from: accounts[0],
+    });
+    await this.mp.acceptOfferForToken(this.sample1155.address, 1, {
+      from: accounts[1],
+      value: getPrice(1),
+    });
+    await expect(
+      await this.sample1155.balanceOf(accounts[0], 1)
+    ).to.be.bignumber.equal("0");
+    await expect(
+      await this.sample1155.balanceOf(accounts[1], 1)
+    ).to.be.bignumber.equal("1");
+  });
+
   it("acceptOfferForToken gives contract owner their royalty", async function () {
     await this.mp.updateCollection(
       this.sample1155.address,
@@ -698,38 +704,6 @@ contract("Marketplace ERC-1155", function (accounts) {
     await expect(ownerBalance).to.be.bignumber.equal(getPrice(royaltyAmount));
   });
 
-  it("acceptOfferForToken transfers the token to buyer", async function () {
-    await this.mp.updateCollection(
-      this.sample1155.address,
-      true,
-      5,
-      "ipfs://mynewhash",
-      { from: accounts[0] }
-    );
-    await expect(
-      await this.sample1155.balanceOf(accounts[0], 1)
-    ).to.be.bignumber.equal("1");
-    await expect(
-      await this.sample1155.balanceOf(accounts[1], 1)
-    ).to.be.bignumber.equal("0");
-    await this.sample1155.setApprovalForAll(this.mp.address, true, {
-      from: accounts[0],
-    });
-    await this.mp.offerTokenForSale(this.sample1155.address, 1, getPrice(1), {
-      from: accounts[0],
-    });
-    await this.mp.acceptOfferForToken(this.sample1155.address, 1, {
-      from: accounts[1],
-      value: getPrice(1),
-    });
-    await expect(
-      await this.sample1155.balanceOf(accounts[0], 1)
-    ).to.be.bignumber.equal("0");
-    await expect(
-      await this.sample1155.balanceOf(accounts[1], 1)
-    ).to.be.bignumber.equal("1");
-  });
-
   it("acceptOfferForToken gives seller the proper sale amount less royalty", async function () {
     await this.mp.updateCollection(
       this.sample1155.address,
@@ -759,10 +733,148 @@ contract("Marketplace ERC-1155", function (accounts) {
       await this.sample1155.balanceOf(accounts[2], 5)
     ).to.be.bignumber.equal("1");
     let sellerBalance = await this.mp.pendingBalance(accounts[1]);
-
+    // confirm 5% royalty for collection owner reflects in balances
+    // amount / (100 / royalty)
     let royaltyAmount = 1 / (100 / 5);
     await expect(sellerBalance).to.be.bignumber.equal(
       getPrice(1 - royaltyAmount)
+    );
+  });
+
+  it("acceptOfferForToken removes existing bid if made by buyer", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      10,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.mp.enterBidForToken(this.sample1155.address, 1, {
+      from: accounts[1],
+      value: getPrice(0.8),
+    });
+    await this.sample1155.setApprovalForAll(this.mp.address, true, {
+      from: accounts[0],
+    });
+    await this.mp.offerTokenForSale(this.sample1155.address, 1, getPrice(1), {
+      from: accounts[0],
+    });
+    await this.mp.acceptOfferForToken(this.sample1155.address, 1, {
+      from: accounts[1],
+      value: getPrice(1),
+    });
+    let bidDetails = await this.mp.tokenBids(this.sample1155.address, 1);
+    await expect(bidDetails.hasBid).to.equal(false);
+    await expect(bidDetails.tokenIndex).to.be.bignumber.equal("1");
+    await expect(bidDetails.bidder).to.equal(nullAddress);
+    await expect(bidDetails.value).to.be.bignumber.equal(getPrice(0));
+    await expect(
+      await this.mp.pendingBalance(accounts[1])
+    ).to.be.bignumber.equal(getPrice(0.8));
+  });
+
+  it("acceptOfferForToken leaves existing bid if not made by buyer", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      10,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.mp.enterBidForToken(this.sample1155.address, 1, {
+      from: accounts[2],
+      value: getPrice(0.8),
+    });
+    await this.sample1155.setApprovalForAll(this.mp.address, true, {
+      from: accounts[0],
+    });
+    await this.mp.offerTokenForSale(this.sample1155.address, 1, getPrice(1), {
+      from: accounts[0],
+    });
+    await this.mp.acceptOfferForToken(this.sample1155.address, 1, {
+      from: accounts[1],
+      value: getPrice(1),
+    });
+    let bidDetails = await this.mp.tokenBids(this.sample1155.address, 1);
+    await expect(bidDetails.hasBid).to.equal(true);
+    await expect(bidDetails.tokenIndex).to.be.bignumber.equal("1");
+    await expect(bidDetails.bidder).to.equal(accounts[2]);
+    await expect(bidDetails.value).to.be.bignumber.equal(getPrice(0.8));
+  });
+
+  // acceptBidForToken
+
+  it("acceptBidForToken requires active contract", async function () {
+    await expectRevert(
+      this.mp.acceptBidForToken(this.sample1155.address, 1, getPrice(1), {
+        from: accounts[1],
+      }),
+      "Collection must be enabled on this contract by project owner."
+    );
+  });
+
+  it("acceptBidForToken requires token ownership", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.mp.enterBidForToken(this.sample1155.address, 1, {
+      from: accounts[1],
+      value: getPrice(0.5),
+    });
+    await this.sample1155.setApprovalForAll(this.mp.address, true, {
+      from: accounts[0],
+    });
+    await expectRevert(
+      this.mp.acceptBidForToken(this.sample1155.address, 1, getPrice(0.5), {
+        from: accounts[1],
+      }),
+      "You must own the token."
+    );
+    await expectRevert(
+      this.mp.acceptBidForToken(this.sample1155.address, 1, getPrice(0.5), {
+        from: accounts[2],
+      }),
+      "You must own the token."
+    );
+  });
+
+  it("acceptBidForToken requires marketplace contract token approval", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.mp.enterBidForToken(this.sample1155.address, 1, {
+      from: accounts[1],
+      value: getPrice(0.5),
+    });
+    await expectRevert(
+      this.mp.acceptBidForToken(this.sample1155.address, 1, getPrice(0.5), {
+        from: accounts[0],
+      }),
+      "Marketplace not approved to spend token on seller behalf."
+    );
+  });
+
+  it("acceptBidForToken requires active bid", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await expectRevert(
+      this.mp.acceptBidForToken(this.sample1155.address, 1, getPrice(0.5), {
+        from: accounts[0],
+      }),
+      "Bid must be active."
     );
   });
 
@@ -788,6 +900,7 @@ contract("Marketplace ERC-1155", function (accounts) {
       "Bid must be greater than minimum price."
     );
   });
+
   it("acceptBidForToken transfers the token to buyer", async function () {
     await this.mp.updateCollection(
       this.sample1155.address,
@@ -921,5 +1034,46 @@ contract("Marketplace ERC-1155", function (accounts) {
     await expect(sellerBalance).to.be.bignumber.equal(
       getPrice(1 - royaltyAmount)
     );
+  });
+
+  // withdraw
+
+  it("withdraw sends only allocated funds to msg.sender", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      10,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.mp.enterBidForToken(this.sample1155.address, 1, {
+      from: accounts[1],
+      value: getPrice(0.5),
+    });
+    await this.mp.enterBidForToken(this.sample1155.address, 1, {
+      from: accounts[2],
+      value: getPrice(0.525),
+    });
+    await this.mp.enterBidForToken(this.sample1155.address, 1, {
+      from: accounts[3],
+      value: getPrice(0.55),
+    });
+    // bids beaten should be returned to accounts 1 and 2
+    await expect(
+      await this.mp.pendingBalance(accounts[1])
+    ).to.be.bignumber.equal(getPrice(0.5));
+    await expect(
+      await this.mp.pendingBalance(accounts[2])
+    ).to.be.bignumber.equal(getPrice(0.525));
+    // withdraw from those accounts
+    await this.mp.withdraw({ from: accounts[1] });
+    await this.mp.withdraw({ from: accounts[2] });
+    // balances should be 0
+    await expect(
+      await this.mp.pendingBalance(accounts[1])
+    ).to.be.bignumber.equal(getPrice(0));
+    await expect(
+      await this.mp.pendingBalance(accounts[2])
+    ).to.be.bignumber.equal(getPrice(0));
   });
 });
