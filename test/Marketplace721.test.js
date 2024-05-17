@@ -657,7 +657,16 @@ contract("Marketplace ERC-721", function (accounts) {
       from: accounts[2],
       value: getPrice(0.8),
     });
+    await this.sample721.approve(this.mp.address, 0, { from: accounts[0] });
+    await this.mp.offerTokenForSale(this.sample721.address, 0, getPrice(1), {
+      from: accounts[0],
+    });
+    await this.mp.acceptOfferForToken(this.sample721.address, 0, {
+      from: accounts[1],
+      value: getPrice(1),
+    });
     let bidDetails = await this.mp.tokenBids(this.sample721.address, 0);
+    await expect(bidDetails.hasBid).to.equal(true);
     await expect(bidDetails.tokenIndex).to.be.bignumber.equal("0");
     await expect(bidDetails.bidder).to.equal(accounts[2]);
     await expect(bidDetails.value).to.be.bignumber.equal(getPrice(0.8));
