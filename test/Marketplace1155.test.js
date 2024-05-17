@@ -292,4 +292,14 @@ contract("Marketplace ERC-1155", function (accounts) {
     await expect(tokenDetails.minValue).to.be.bignumber.equal(getPrice(5));
     await expect(tokenDetails.onlySellTo).to.equal(nullAddress);
   });
+
+  it("tokenNoLongerForSale requires active contract", async function () {
+    // try tokenNoLongerForSale when contract not enabled, should fail
+    await expectRevert(
+      this.mp.tokenNoLongerForSale(this.sample1155.address, 1, {
+        from: accounts[0],
+      }),
+      "Collection must be enabled on this contract by project owner."
+    );
+  });
 });
