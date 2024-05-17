@@ -807,4 +807,54 @@ contract("Marketplace ERC-721", function (accounts) {
     await expect(bidDetails.bidder).to.equal(nullAddress);
     await expect(bidDetails.value).to.be.bignumber.equal(getPrice(0));
   });
+
+  it("acceptBidForToken gives contract owner their royalty", async function () {
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      10,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.sample721.mint(10, { from: accounts[2] }); // mint 10 more as new address
+    await this.mp.enterBidForToken(this.sample721.address, 10, {
+      from: accounts[1],
+      value: getPrice(1),
+    });
+    await this.sample721.approve(this.mp.address, 10, { from: accounts[2] });
+    await this.mp.acceptBidForToken(this.sample721.address, 10, getPrice(1), {
+      from: accounts[2],
+    });
+    let ownerBalance = await this.mp.pendingBalance(accounts[0]);
+    // confirm 10% royalty for collection owner reflects in balances
+    // amount / (100 / royalty)
+    let royaltyAmount = 1 / (100 / 10);
+    await expect(ownerBalance).to.be.bignumber.equal(getPrice(royaltyAmount));
+  });
+
+  it("acceptBidForToken gives seller the proper sale amount less royalty", async function () {
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      10,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.sample721.mint(10, { from: accounts[2] }); // mint 10 more as new address
+    await this.mp.enterBidForToken(this.sample721.address, 10, {
+      from: accounts[1],
+      value: getPrice(1),
+    });
+    await this.sample721.approve(this.mp.address, 10, { from: accounts[2] });
+    await this.mp.acceptBidForToken(this.sample721.address, 10, getPrice(1), {
+      from: accounts[2],
+    });
+    let sellerBalance = await this.mp.pendingBalance(accounts[2]);
+    // confirm 10% royalty for collection owner reflects in balances
+    // amount / (100 / royalty)
+    let royaltyAmount = 1 / (100 / 10);
+    await expect(sellerBalance).to.be.bignumber.equal(
+      getPrice(1 - royaltyAmount)
+    );
+  });
 });
