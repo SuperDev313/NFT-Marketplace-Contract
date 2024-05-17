@@ -474,4 +474,33 @@ contract("Marketplace ERC-1155", function (accounts) {
       "Only original bidder can withdraw this bid."
     );
   });
+
+  it("withdrawBidForToken removes bid for token", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // create bid
+    await this.mp.enterBidForToken(this.sample1155.address, 1, {
+      from: accounts[1],
+      value: getPrice(1),
+    });
+    // try revoking offer
+    await expectEvent(
+      await this.mp.withdrawBidForToken(this.sample1155.address, 1, {
+        from: accounts[1],
+      }),
+      "TokenBidWithdrawn"
+    );
+    // bid should be removed
+    let bidDetails = await this.mp.tokenBids(this.sample1155.address, 1);
+    await expect(bidDetails.hasBid).to.equal(false);
+    await expect(bidDetails.tokenIndex).to.be.bignumber.equal("1");
+    await expect(bidDetails.bidder).to.equal(nullAddress);
+    await expect(bidDetails.value).to.be.bignumber.equal(getPrice(0));
+  });
 });
