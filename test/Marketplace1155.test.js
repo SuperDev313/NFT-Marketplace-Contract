@@ -246,4 +246,22 @@ contract("Marketplace ERC-1155", function (accounts) {
       "Marketplace not approved to spend token on seller behalf."
     );
   });
+
+  it("offerTokenForSale requires token ownership", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    // try offerTokenForSale as wrong owner, should fail
+    await expectRevert(
+      this.mp.offerTokenForSale(this.sample1155.address, 1, getPrice(5), {
+        from: accounts[1],
+      }),
+      "You must own the token."
+    );
+  });
 });
