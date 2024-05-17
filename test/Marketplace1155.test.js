@@ -576,4 +576,34 @@ contract("Marketplace ERC-1155", function (accounts) {
       "Token must be for sale by owner."
     );
   });
+
+  it("acceptOfferForToken requires enough Ether sent", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.sample1155.setApprovalForAll(this.mp.address, true, {
+      from: accounts[0],
+    });
+    await this.mp.offerTokenForSale(this.sample1155.address, 1, getPrice(1), {
+      from: accounts[0],
+    });
+    await expectRevert(
+      this.mp.acceptOfferForToken(this.sample1155.address, 1, {
+        from: accounts[1],
+        value: getPrice(0.9999),
+      }),
+      "Not enough Ether sent."
+    );
+    await expectRevert(
+      this.mp.acceptOfferForToken(this.sample1155.address, 1, {
+        from: accounts[1],
+        value: getPrice(0.1),
+      }),
+      "Not enough Ether sent."
+    );
+  });
 });
