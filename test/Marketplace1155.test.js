@@ -636,4 +636,30 @@ contract("Marketplace ERC-1155", function (accounts) {
       "Seller is no longer the owner, cannot accept offer."
     );
   });
+
+  it("acceptOfferForToken halts sale/active offer", async function () {
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.sample1155.setApprovalForAll(this.mp.address, true, {
+      from: accounts[0],
+    });
+    await this.mp.offerTokenForSale(this.sample1155.address, 1, getPrice(1), {
+      from: accounts[0],
+    });
+    await this.mp.acceptOfferForToken(this.sample1155.address, 1, {
+      from: accounts[1],
+      value: getPrice(1),
+    });
+    let offerDetail = await this.mp.tokenOffers(this.sample1155.address, 1);
+    await expect(offerDetail.isForSale).to.equal(false);
+    await expect(offerDetail.tokenIndex).to.be.bignumber.equal("1");
+    await expect(offerDetail.seller).to.equal(accounts[1]); // should be the new owner (buyer)
+    await expect(offerDetail.minValue).to.be.bignumber.equal(getPrice(0));
+    await expect(offerDetail.onlySellTo).to.equal(nullAddress);
+  });
 });
