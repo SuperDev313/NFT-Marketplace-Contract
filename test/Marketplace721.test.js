@@ -621,5 +621,27 @@ contract("Marketplace ERC-721", function (accounts) {
     });
     await expect(await this.sample721.ownerOf(0)).to.equal(accounts[1]);
   });
-  
+
+  it("acceptOfferForToken gives contract owner their royalty", async function () {
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      10,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.sample721.mint(10, { from: accounts[1] }); // mint 10 more as new address
+    await this.mp.offerTokenForSale(this.sample721.address, 10, getPrice(1), {
+      from: accounts[1],
+    });
+    await this.mp.acceptOfferForToken(this.sample721.address, 10, {
+      from: accounts[2],
+      value: getPrice(1),
+    });
+    let ownerBalance = await this.mp.pendingBalance(accounts[0]);
+    // confirm 10% royalty for collection owner reflects in balances
+    // amount / (100 / royalty)
+    let royaltyAmount = 1 / (100 / 10);
+    await expect(ownerBalance).to.be.bignumber.equal(getPrice(royaltyAmount));
+  });
 });
