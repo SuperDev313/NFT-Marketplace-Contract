@@ -264,4 +264,32 @@ contract("Marketplace ERC-1155", function (accounts) {
       "You must own the token."
     );
   });
+
+  it("offerTokenForSale puts new offer for token", async function () {
+    // update collection
+    await this.mp.updateCollection(
+      this.sample1155.address,
+      true,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.sample1155.setApprovalForAll(this.mp.address, true, {
+      from: accounts[0],
+    });
+    // try offering token as owner, should succeed
+    await expectEvent(
+      await this.mp.offerTokenForSale(this.sample1155.address, 1, getPrice(5), {
+        from: accounts[0],
+      }),
+      "TokenOffered"
+    );
+    // token should have valid offer with same numbers
+    let tokenDetails = await this.mp.tokenOffers(this.sample1155.address, 1);
+    await expect(tokenDetails.isForSale).to.equal(true);
+    await expect(tokenDetails.tokenIndex).to.be.bignumber.equal("1");
+    await expect(tokenDetails.seller).to.equal(accounts[0]);
+    await expect(tokenDetails.minValue).to.be.bignumber.equal(getPrice(5));
+    await expect(tokenDetails.onlySellTo).to.equal(nullAddress);
+  });
 });
