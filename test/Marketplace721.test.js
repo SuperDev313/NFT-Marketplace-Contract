@@ -727,4 +727,20 @@ contract("Marketplace ERC-721", function (accounts) {
       "Marketplace not approved to spend token on seller behalf"
     );
   });
+
+  it("acceptBidForToken requires active bid", async function () {
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      5,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await expectRevert(
+      this.mp.acceptBidForToken(this.sample721.address, 0, getPrice(0.5), {
+        from: accounts[0],
+      }),
+      "Bid must be active."
+    );
+  });
 });
