@@ -644,4 +644,22 @@ contract("Marketplace ERC-721", function (accounts) {
     let royaltyAmount = 1 / (100 / 10);
     await expect(ownerBalance).to.be.bignumber.equal(getPrice(royaltyAmount));
   });
+
+  it("acceptOfferForToken leaves existing bid if not made by buyer", async function () {
+    await this.mp.updateCollection(
+      this.sample721.address,
+      false,
+      10,
+      "ipfs://mynewhash",
+      { from: accounts[0] }
+    );
+    await this.mp.enterBidForToken(this.sample721.address, 0, {
+      from: accounts[2],
+      value: getPrice(0.8),
+    });
+    let bidDetails = await this.mp.tokenBids(this.sample721.address, 0);
+    await expect(bidDetails.tokenIndex).to.be.bignumber.equal("0");
+    await expect(bidDetails.bidder).to.equal(accounts[2]);
+    await expect(bidDetails.value).to.be.bignumber.equal(getPrice(0.8));
+  });
 });
